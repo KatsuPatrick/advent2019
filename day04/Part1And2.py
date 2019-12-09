@@ -2,7 +2,7 @@ import math
 
 def containsAdjacent(i):
     stringI = str(i);
-    if stringI[0] == stringI[1] or stringI[1] == stringI[2] or stringI[2] == stringI[3] or stringI[3] == stringI[4] or stringI[4] == stringI[5]:
+    if (stringI[0] == stringI[1] and stringI[1] != stringI[2]) or (stringI[1] == stringI[2] and stringI[0] != stringI[1] and stringI[2] != stringI[3]) or (stringI[2] == stringI[3] and stringI[1] != stringI[2] and stringI[3] != stringI[4]) or (stringI[3] == stringI[4] and stringI[2] != stringI[3] and stringI[4] != stringI[5]) or (stringI[4] == stringI[5] and stringI[4] != stringI[3]):
         return True;
     return False;
 
