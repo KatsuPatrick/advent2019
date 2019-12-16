@@ -55,8 +55,9 @@ def recieveInput():
     global playerScore;
     global aiInput;
     global inputIndex;
-    global newDiscardInputs;
     global paddleIncrementIndex;
+    global ballExitDifference;
+    global exitIndex;
 
     #print(variablesRecieved);
 
@@ -100,16 +101,20 @@ def recieveInput():
         if i == maxY - 2:
             if currentLine.count("O") > 0:
                 paddleIncrementIndex.append(inputIndex)
-
+                ballExitDifference[inputIndex] = 0
+        if i == maxY - 1:
+            if currentLine.count("O") > 0:
+                ballExitDifference[inputIndex - 1] = currentLine.index("O") - currentLine.index("=");
         currentLineIndex += 1
-        #print(currentLine + " " + str(playerScore));
+        if inputIndex == exitIndex:
+            print(currentLine + " " + str(playerScore) + " " + str(inputIndex));
         #input()
     #print(playerScore);
+    #input()
 
 
 
     playerInput = aiInput[inputIndex]
-    newDiscardInputs.append(aiInput[inputIndex])
     inputIndex += 1;
 
     if playerInput == 0:
@@ -251,30 +256,58 @@ def runGame(aiInput):
 aiInput = [];
 discardInputs = {};
 discardInputs[0] = set();
-for i in range(1000):
+for i in range(5000):
     aiInput.append(0);
 currentMaxScore = 0;
 paddleIncrementIndexMax = 0;
 firstUnlockedInputIndex = 0;
+paddleApproach = {};
+exitIndex = 0;
+paddleModifiers = [];
+prevExitIndex = 0;
+testRun = True;
+ballExitDifference = {}
 while True:
     index = 0;
+    for i in range(firstUnlockedInputIndex, 1000):
+        aiInput[i] = 0;
+    if firstUnlockedInputIndex != 0:
+        nextInputIndex = firstUnlockedInputIndex;
+        for i in range(len(modifiedPaddleIndex)):
+            #print(modifiedPaddleIndex)
+            currentPaddle = modifiedPaddleIndex[- i - 1]
+            for i in range(abs(ballExitDifference[currentPaddle])):
+                #print(i)
+                if ballExitDifference[currentPaddle] > 0:
+                    aiInput[nextInputIndex + i] = 1;
+                else:
+                    aiInput[nextInputIndex + i] = 2;
+            if ballExitDifference[currentPaddle] > 0:
+                if paddleApproach[currentPaddle] == 0:
+                    aiInput[nextInputIndex + abs(ballExitDifference[currentPaddle])] = 1
+                elif paddleApproach[currentPaddle] == 1:
+                    aiInput[currentPaddle - 1] = 1
+                else:
+                    aiInput[nextInputIndex + abs(ballExitDifference[currentPaddle])] = 1
+                    aiInput[nextInputIndex + abs(ballExitDifference[currentPaddle]) + 1] = 1
+                    aiInput[currentPaddle + 1] = -1
+            else:
+                if paddleApproach[currentPaddle] == 0:
+                    aiInput[nextInputIndex + abs(ballExitDifference[currentPaddle])] = -1
+                elif paddleApproach[currentPaddle] == 1:
+                    aiInput[currentPaddle - 1] = -1
+                else:
+                    aiInput[nextInputIndex + abs(ballExitDifference[currentPaddle])] = -1
+                    aiInput[nextInputIndex + abs(ballExitDifference[currentPaddle]) + 1] = -1
+                    aiInput[currentPaddle + 1] = 1
+            nextInputIndex = currentPaddle + 1;
+        for i in range(4999):
+            if aiInput[999 - i] != 0:
+                #print(str(999 - i));
+                break;
 
-    discardCheck = False;
-    while aiInput.count(3) != 0 or discardCheck == False:
-        while aiInput.count(3) != 0:
-            aiInput[aiInput.index(3) + 1] += 1;
-            aiInput[aiInput.index(3)] = 0;
-
-
-        while discardCheck == False:
-            #print(discardInputs);
-            restartDiscard = False
-            if tuple(aiInput[firstUnlockedInputIndex:]) in discardInputs[firstUnlockedInputIndex]:
-                aiInput[firstUnlockedInputIndex] += 1
-                restartDiscard = True
-            if restartDiscard == False:
-                discardCheck = True;
-
+    #print(aiInput[:100]);
+    print(paddleApproach);
 
     #print(aiInput);
     #input();
@@ -284,36 +317,61 @@ while True:
     variablesRecieved = [];
     currentDisplay = {};
     playerScore = 0;
-    newDiscardInputs = []
     paddleIncrementIndex = []
+    modifiedPaddleIndex = [];
+
 
     #print(aiInput);
     score = runGame(aiInput);
-    #print(score)
+    prevExitIndex = exitIndex;
+    exitIndex = inputIndex;
+    print(exitIndex);
+
+    #for i in range(999):
+        #if aiInput[999 - i] != 0:
+            #if 999 - i != exitIndex - 1:
+                #print("!!!", 999 - i, exitIndex - 1);
+                #input();
+            #break;
+
+    if exitIndex != prevExitIndex:
+        paddleModifiers = [];
+        toPop = []
+        for i in paddleApproach:
+            if i > exitIndex:
+                toPop.append(i)
+        for i in toPop:
+            paddleApproach.pop(i);
+
+    for i in paddleIncrementIndex:
+        if i not in paddleApproach:
+            paddleApproach[i] = 0;
+    #input();
+
     if score > currentMaxScore:
         currentMaxScore = score;
+        print("NEW MAX SCORE! Score: " + str(currentMaxScore));
+    elif testRun == True:
+        testRun = False;
+    else: # 0: stationary 1: from std 2: opposite
+        if paddleModifiers == []:
+            paddleModifiers.append(paddleApproach[paddleIncrementIndex[-1]] + 1);
+        else:
+            paddleModifiers[0] += 1
+        testRun = True;
+
+    while paddleModifiers.count(3) > 0:
+        if paddleModifiers.index(3) < len(paddleModifiers) - 1:
+            paddleModifiers[paddleModifiers.index(3) + 1] += 1;
+        else:
+            paddleModifiers.append(paddleApproach[paddleIncrementIndex[- len(paddleModifiers)]] + 1);
+        paddleModifiers[paddleModifiers.index(3)] = 0
+        
+    for i in range(len(paddleModifiers)):
+        paddleApproach[paddleIncrementIndex[-i - 1]] = paddleModifiers[i]
+        modifiedPaddleIndex.append(paddleIncrementIndex[- i -1]);
     if len(paddleIncrementIndex) > paddleIncrementIndexMax:
         paddleIncrementIndexMax = len(paddleIncrementIndex)
-        print(aiInput);
-        print("NEW MAX PADDLE HITS! Score: " + str(currentMaxScore));
-    if len(paddleIncrementIndex) > 1:
-        if paddleIncrementIndex[-2] + 1 > firstUnlockedInputIndex:
-            firstUnlockedInputIndex = paddleIncrementIndex[-2] + 1;
-            discardInputs[firstUnlockedInputIndex] = set()
-            aiInput[paddleIncrementIndex[-2] + 1] += 1;
-            print(firstUnlockedInputIndex);
-            print("to ~" + str(paddleIncrementIndex[-1]));
-    #print(paddleIncrementIndex);
-    #print(discardInputs);
-    #print(firstUnlockedInputIndex);
-    #print(newDiscardInputs[firstUnlockedInputIndex:])
-    #input()
-    if tuple(newDiscardInputs[firstUnlockedInputIndex:]) in discardInputs[firstUnlockedInputIndex]:
-        firstUnlockedInputIndex += -1;
-        discardInputs[firstUnlockedInputIndex] = set()
-        discardInputs[firstUnlockedInputIndex].add(tuple(aiInput[firstUnlockedInputIndex + 1]))
-        print(firstUnlockedInputIndex);
-        print("to ~" + str(paddleIncrementIndex[-1]));
-    else:
-        discardInputs[firstUnlockedInputIndex].add(tuple(newDiscardInputs[firstUnlockedInputIndex:]));
-    aiInput[firstUnlockedInputIndex] += 1;
+        #print(aiInput);
+        firstUnlockedInputIndex = paddleIncrementIndex[-2] + 1;
+    firstUnlockedInputIndex = paddleIncrementIndex[- len(paddleModifiers) - 1] + 1
